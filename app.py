@@ -22,7 +22,8 @@ app = FastAPI()
 @app.post("/chat")
 async def chat(chat: Chat):
     input_messages = [HumanMessage(chat.content)]
-    output = graph.invoke(
-        {"messages": input_messages}
-    )
+    output = graph.invoke({
+        "messages": input_messages,
+        "input" :  chat.content
+    })
     return output["messages"][-1]

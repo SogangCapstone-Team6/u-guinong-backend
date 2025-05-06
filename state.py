@@ -4,4 +4,6 @@ from langchain_core.messages import BaseMessage
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
+    input: str
+    decision: str
 
