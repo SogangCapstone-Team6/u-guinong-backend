@@ -2,8 +2,8 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from models import Chat
-from agent import get_graph
+from schemas import Chat
+from llm.agent import get_graph
 
 from langchain_core.messages import HumanMessage
 
@@ -20,10 +20,15 @@ graph = get_graph()
 app = FastAPI()
 
 @app.post("/chat")
-async def chat(chat: Chat):
+async def init_chat(chat: Chat):
     input_messages = [HumanMessage(chat.content)]
     output = graph.invoke({
         "messages": input_messages,
         "input" :  chat.content
     })
     return output["messages"][-1]
+
+
+@app.get("/chat/{chat_id}")
+async def chat(chat_id):
+    return {"chat_id": chat_id}

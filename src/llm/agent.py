@@ -1,5 +1,5 @@
-from state import State
-from nodes import call_model
+from .state import State
+from .nodes import call_model
 from langgraph.graph import StateGraph, START, END
 
 from typing_extensions import Literal
@@ -30,7 +30,6 @@ def call_llm(state: State):
     pass
 
 def route_decision(state: State):
-    # Return the node name you want to visit next
     if state["decision"] == "RAG":
         return "RAG"
     elif state["decision"] == "LLM":
