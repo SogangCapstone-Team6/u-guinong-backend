@@ -4,3 +4,8 @@
 **/__pycache__/
 
 references/
+
+# DB
+*.db
+**/migrations/
+alembic.ini
