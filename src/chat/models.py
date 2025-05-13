@@ -6,5 +6,5 @@ class Chat(Base):
     __tablename__ = "chat"
 
     chat_id = Column(UUID(as_uuid=True), primary_key=True)
-    user = Column(Integer, ForeignKey("user.id"))
+    user = Column(Integer, ForeignKey("user.email"))
     
