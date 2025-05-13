@@ -31,4 +31,16 @@ def auth_signup(user: SignupSchema, db: Session=Depends(get_db)):
 
 @router.post("/login")
 def auth_login(user: LoginSchema, db: Session=Depends(get_db)):
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or password"
+        )
+
+    if not checkpw(user.password, db_user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or password"
+        )
+
     return {"response": "login"}
+
