@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Annotated
 from sqlalchemy.orm import Session
 
 from src.database import get_db
 from src.auth.models import User
-from src.auth.schemas import SignupSchema, LoginSchema
-from src.auth.utils import hashpw, checkpw
+from src.auth.schemas import SignupSchema, LoginSchema, Token
+from src.auth.utils import hashpw, checkpw, create_access_token, get_user
 
 router = APIRouter(
     prefix="/api/auth"
@@ -29,8 +30,9 @@ def auth_signup(user: SignupSchema, db: Session=Depends(get_db)):
 
     return {"response": "signup success!"}
 
+
 @router.post("/login")
-def auth_login(user: LoginSchema, db: Session=Depends(get_db)):
+def auth_login(user: LoginSchema, db: Annotated[Session, Depends(get_db)]):
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user:
         raise HTTPException(
@@ -42,5 +44,14 @@ def auth_login(user: LoginSchema, db: Session=Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or password"
         )
 
-    return {"response": "login"}
+    access_token = create_access_token(
+        data={"sub": user.email}
+    )
+    return Token(access_token=access_token, token_type="bearer")
 
+
+
+
+@router.post("/check")
+def validate_token(user: Annotated[User, Depends(get_user)]):
+    return {"email": user.email}
