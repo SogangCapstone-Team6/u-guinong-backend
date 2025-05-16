@@ -1,4 +1,4 @@
 from pydantic import BaseModel
 
-class Chat(BaseModel):
+class ChatSchema(BaseModel):
     content: str
