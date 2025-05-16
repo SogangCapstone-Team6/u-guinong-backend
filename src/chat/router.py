@@ -1,16 +1,15 @@
 import uuid
-
-from fastapi import APIRouter, Depends
-
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
 from typing import Annotated
+from langchain_core.messages import HumanMessage
 
 from src.database import get_db
 from src.chat.models import Chat
 from src.chat.schemas import ChatSchema
 from src.auth.models import User
 from src.auth.utils import get_user
+from src.llm.agent import graph
 
 
 router = APIRouter(
@@ -44,5 +43,24 @@ def get_chatting_history(chat_id: str, user: Annotated[User, Depends(get_user)],
     return {"response": chat_id}
 
 @router.post("/{chat_id}")
-def send_chatting(chat_id: str, chat: ChatSchema):
-    return {"response": chat_id, "content": chat.content}
+def send_chatting(chat_id: str, chat: ChatSchema, user: Annotated[User, Depends(get_user)], db: Annotated[Session, Depends(get_db)]):
+    chat_uuid = uuid.UUID(chat_id)
+    db_chat = db.query(Chat).filter(Chat.chat_id == chat_uuid).first()
+    
+    if not db_chat:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chat id"
+        )
+
+    if db_chat.user != user.email :
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No access to given chat id"
+        )
+    
+    config = {"configurable": {"thread_id": chat_id}}
+    response = graph.invoke({
+            "messages" : HumanMessage(content=chat.content),
+            "input" : chat.content
+         }, config=config)
+    
+    return {"response": response["messages"][-1].content}
