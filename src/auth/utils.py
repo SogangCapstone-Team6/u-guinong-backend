@@ -42,7 +42,6 @@ def get_user(
         db: Annotated[Session, Depends(get_db)]
         ) -> User:
     
-    print(token)
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

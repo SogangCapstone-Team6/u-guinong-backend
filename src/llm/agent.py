@@ -7,13 +7,16 @@ from pydantic import BaseModel, Field
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.postgres import PostgresSaver
+from src.core.config import SQLALCHEMY_DATABASE_URL
 
 class Route(BaseModel):
     step: Literal["RAG", "LLM"] = Field(None)
 
 llm = init_chat_model("gpt-4o-mini")
 router = llm.with_structured_output(Route)
-memory = MemorySaver()
+
+checkpointer = MemorySaver()
 
 def call_router(state: State):
     decision = router.invoke([
@@ -56,7 +59,7 @@ def get_graph():
     workflow.add_edge("rag", "llm")
     workflow.add_edge("llm", END)
 
-    graph = workflow.compile(checkpointer=memory)
+    graph = workflow.compile(checkpointer=checkpointer)
     return graph
 
 graph = get_graph()
