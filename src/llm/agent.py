@@ -1,5 +1,5 @@
 from .state import State
-from .nodes import call_model, rag
+from .nodes import call_model, retrive_data
 from langgraph.graph import StateGraph, START, END
 
 from typing_extensions import Literal
@@ -26,8 +26,11 @@ def call_router(state: State):
     return {"decision": decision.step}
 
 def call_rag(state: State):
-    retrived_data = rag(state);
-    return {"messages": ["rag has called"]}
+    retrived_data = retrive_data(state);
+
+    retrived_texts = [data["metadata"]["text"] for data in retrived_data]
+
+    return {"retrived_data": retrived_texts}
 
 def call_llm(state: State):
     pass
