@@ -9,3 +9,5 @@ references/
 *.db
 **/migrations/
 alembic.ini
+
+data/*

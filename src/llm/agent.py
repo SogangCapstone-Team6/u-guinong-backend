@@ -1,5 +1,5 @@
 from .state import State
-from .nodes import call_model
+from .nodes import call_model, rag
 from langgraph.graph import StateGraph, START, END
 
 from typing_extensions import Literal
@@ -7,8 +7,6 @@ from pydantic import BaseModel, Field
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.checkpoint.postgres import PostgresSaver
-from src.core.config import SQLALCHEMY_DATABASE_URL
 
 class Route(BaseModel):
     step: Literal["RAG", "LLM"] = Field(None)
@@ -28,6 +26,7 @@ def call_router(state: State):
     return {"decision": decision.step}
 
 def call_rag(state: State):
+    retrived_data = rag(state);
     return {"messages": ["rag has called"]}
 
 def call_llm(state: State):
