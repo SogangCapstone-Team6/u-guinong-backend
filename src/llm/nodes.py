@@ -30,7 +30,7 @@ def rag(state):
     query = state["input"]
 
     query_emb = embedding_model.get_embedding(query)
-    top_sections = coarse_search_sections(query, section_data, top_k=TOP_K_SECTIONS)
+    top_sections = coarse_search_sections(query_emb, section_data, top_k=TOP_K_SECTIONS)
     top_chunks = fine_search_chunks(query_emb, chunk_index, target_sections=top_sections, top_k=TOP_K_CHUNKS)
     
     return top_chunks
