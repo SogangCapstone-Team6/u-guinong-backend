@@ -63,7 +63,7 @@ async def send_chatting(
         )
 
     config = {"configurable": {"thread_id": chat_id}}
-    response = graph.ainvoke({
+    response = await graph.ainvoke({
             "messages" : HumanMessage(content=content),
             "input" : content
          }, config=config)
