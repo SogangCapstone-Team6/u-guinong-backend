@@ -1,11 +1,19 @@
 from functools import lru_cache
+from pydantic import BaseModel, Field
+from typing import Literal
 from langchain_openai import ChatOpenAI
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import HumanMessage, SystemMessage
 
-from src.core.config import TOP_K_CHUNKS, TOP_K_SECTIONS
-from src.rag.setup import section_data, chunk_index
-from src.rag.embedding_model import embedding_model
-from src.rag.section_coarse_search import coarse_search_sections
-from src.rag.fine_search import fine_search_chunks
+from src.llm.state import State
+from src.llm.utils import build_prompt
+from src.rag import retrive_data
+
+class Route(BaseModel):
+    step: Literal["RAG", "LLM"] = Field(None)
+
+llm = init_chat_model("gpt-4o-mini")
+router = llm.with_structured_output(Route)
 
 @lru_cache(maxsize=4)
 def _get_model(model_name: str):
@@ -15,30 +23,33 @@ def _get_model(model_name: str):
         raise ValueError(f"Unsupported model type: {model_name}")
     return model
 
+
+def route_decision(state: State):
+    if state["decision"] == "RAG":
+        return "RAG"
+    elif state["decision"] == "LLM":
+        return "LLM"
+
+
+def call_router(state: State):
+    decision = router.invoke([
+            SystemMessage(
+                content="Route the input to RAG if it is related to crops. If not, route the input to LLM."
+            ),
+            HumanMessage(content=state["input"]),
+        ])
+    return {"decision": decision.step}
+
+
+def call_rag(state: State):
+    retrived_data = retrive_data(state);
+    retrived_texts = [data["metadata"]["text"] for data in retrived_data]
+    return {"retrived_data": retrived_texts}
+
+
 def call_model(state, config):
-    system_prompt = """
-    You are an agricultural expert specializing in helping young people who have returned to farming in rural areas. Based on the information provided, please give the best possible advice. But it should be only based on fact and given information. If you don't know, just say you don't know
-    """
-
-    messages = state["messages"]
-    messages = [{"role": "system", "content": system_prompt}] + messages
-    if(state["decision"] == "RAG"):
-        rag_prompt = "Here is some information you can refer\n"
-        for data in state["retrived_data"]:
-            rag_prompt = rag_prompt + data + "\n"
-        messages = messages + [{"role": "system", "content": rag_prompt}]
-
+    prompt = build_prompt(state)
     model_name = config.get('configurable', {}).get("model_name", "openai")
     model = _get_model(model_name)
-    response = model.invoke(messages)
+    response = model.invoke(prompt)
     return {"messages": [response]}
-
-
-def retrive_data(state):
-    query = state["input"]
-
-    query_emb = embedding_model.get_embedding(query)
-    top_sections = coarse_search_sections(query_emb, section_data, top_k=TOP_K_SECTIONS)
-    top_chunks = fine_search_chunks(query_emb, chunk_index, target_sections=top_sections, top_k=TOP_K_CHUNKS)
-    
-    return top_chunks
