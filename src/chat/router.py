@@ -71,7 +71,7 @@ async def send_chatting(
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[User, Depends(get_user)], 
     content: Annotated[str, Form(...)], 
-    disease: Annotated[str, Form] | None='',
+    disease: Annotated[str, Form]=Form(''),
     image: Annotated[UploadFile, Form] | None=File(None)
 ):
     chat_uuid = uuid.UUID(chat_id)
